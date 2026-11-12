@@ -1,18 +1,28 @@
 FROM php:8.5-fpm
 
 RUN apt-get update \
-  && apt-get install -y apt-utils mariadb-client libfreetype6-dev libicu-dev libmagickwand-dev libjpeg62-turbo-dev libpng-dev libwebp-dev libzip-dev libavif-dev libaom-dev libdav1d-dev \
-  && apt-get clean all
+  && apt-get install -y --no-install-recommends mariadb-client libfreetype6-dev libicu-dev libjpeg62-turbo-dev libpng-dev libwebp-dev libzip-dev libavif-dev \
+  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg --with-webp --with-avif \
-  && docker-php-ext-configure intl \
-  && docker-php-ext-install exif gd intl mysqli pdo pdo_mysql zip
+  && docker-php-ext-install -j$(nproc) exif gd intl mysqli pdo pdo_mysql zip
 
-RUN echo 'memory_limit = 1024M' >> $PHP_INI_DIR/conf.d/memorylimit.ini;
-RUN echo 'upload_max_filesize = 50M;\npost_max_size = 50M;' >> $PHP_INI_DIR/conf.d/uploadfilesize.ini;
-RUN echo  '[www]\npm = dynamic\npm.max_children = 32\npm.process_idle_timeout = 3s' >> /usr/local/etc/php-fpm.d/zz-overrides.conf
+RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
+  && { \
+    echo 'memory_limit = 1024M'; \
+    echo 'upload_max_filesize = 50M'; \
+    echo 'post_max_size = 50M'; \
+    echo 'date.timezone = Europe/Berlin'; \
+  } > $PHP_INI_DIR/conf.d/zz-app.ini
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+RUN { \
+    echo '[www]'; \
+    echo 'pm = ondemand'; \
+    echo 'pm.max_children = 32'; \
+    echo 'pm.process_idle_timeout = 3s'; \
+  } > /usr/local/etc/php-fpm.d/zz-overrides.conf
+
+COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
 WORKDIR /var/www
 
