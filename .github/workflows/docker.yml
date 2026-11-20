@@ -5,6 +5,13 @@ on:
     branches: [main]
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      no_cache:
+        description: "Ohne Cache bauen"
+        type: boolean
+        default: false
+  schedule:
+    - cron: "0 3 * * 5"
 
 permissions:
   contents: read
@@ -36,6 +43,8 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
+          pull: true
+          no-cache: ${{ github.event_name == 'schedule' || inputs.no_cache == true }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
