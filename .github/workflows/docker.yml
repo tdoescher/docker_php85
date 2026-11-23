@@ -39,6 +39,8 @@ jobs:
           platforms: linux/amd64
           push: true
           pull: true
+          provenance: false
+          sbom: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
