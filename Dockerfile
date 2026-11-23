@@ -7,6 +7,9 @@ RUN apt-get update \
 RUN docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg --with-webp --with-avif \
   && docker-php-ext-install -j$(nproc) exif gd intl mysqli pdo pdo_mysql zip
 
+COPY --from=mlocati/php-extension-installer:latest /usr/bin/install-php-extensions /usr/local/bin/
+RUN install-php-extensions imagick
+
 RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
   && { \
     echo 'memory_limit = 1024M'; \
